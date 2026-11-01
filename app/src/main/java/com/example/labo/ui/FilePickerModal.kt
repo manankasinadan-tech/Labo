@@ -1,7 +1,11 @@
 package com.example.labo.ui
 
+import android.net.Uri
 import android.os.Environment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,18 +17,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.FolderSpecial
-import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,15 +41,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.labo.util.StorageUtils
+import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
@@ -50,22 +63,41 @@ fun FilePickerModal(
     onDismissRequest: () -> Unit,
     onFileSelected: (File) -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     val defaultDir = remember {
-        com.example.labo.util.StorageUtils.getBrowsableRootDirectory(context)
+        StorageUtils.getLaboDirectory(context)
     }
 
     var currentDir by remember { mutableStateOf(defaultDir) }
+    var disableExtensionFilter by remember { mutableStateOf(false) }
 
-    val fileList = remember(currentDir) {
+    // SAF Picker Launcher fallback
+    val safPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            coroutineScope.launch {
+                val copied = StorageUtils.copyUriToLocalCache(context, it)
+                if (copied != null) {
+                    onFileSelected(copied)
+                }
+            }
+        }
+    }
+
+    val fileList = remember(currentDir, disableExtensionFilter) {
         val files = currentDir.listFiles()?.toList() ?: emptyList()
         val dirs = files.filter { it.isDirectory }.sortedBy { it.name.lowercase() }
         val matchingFiles = files.filter { !it.isDirectory }.filter { file ->
-            if (fileFilterExtensions.isEmpty()) true
+            if (fileFilterExtensions.isEmpty() || disableExtensionFilter) true
             else fileFilterExtensions.any { ext -> file.name.endsWith(".$ext", ignoreCase = true) }
         }.sortedBy { it.name.lowercase() }
         dirs + matchingFiles
     }
+
+    val shortcuts = remember { StorageUtils.getStorageShortcuts(context) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -110,81 +142,143 @@ fun FilePickerModal(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
         },
         text = {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(350.dp)
-            ) {
-                if (fileList.isEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FolderSpecial,
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Aucun fichier correspondant trouvé",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Storage Shortcuts Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    shortcuts.forEach { shortcut ->
+                        FilterChip(
+                            selected = currentDir.absolutePath == shortcut.dir.absolutePath,
+                            onClick = { currentDir = shortcut.dir },
+                            label = { Text(shortcut.label, fontSize = 10.sp) },
+                            colors = if (shortcut.isPrimary) FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                            ) else FilterChipDefaults.filterChipColors()
                         )
                     }
-                } else {
-                    LazyColumn {
-                        items(fileList) { item ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        if (item.isDirectory) {
-                                            currentDir = item
-                                        } else {
-                                            onFileSelected(item)
-                                        }
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = if (item.isDirectory) Icons.Default.Folder else Icons.Default.Description,
-                                    contentDescription = null,
-                                    tint = if (item.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                                    modifier = Modifier.size(20.dp)
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // SAF and Filter Toggle Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { safPickerLauncher.launch(arrayOf("*/*")) },
+                        modifier = Modifier.height(34.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.FolderOpen, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Sélecteur Système (SAF)", fontSize = 10.sp)
+                    }
+
+                    if (fileFilterExtensions.isNotEmpty()) {
+                        FilterChip(
+                            selected = disableExtensionFilter,
+                            onClick = { disableExtensionFilter = !disableExtensionFilter },
+                            label = {
+                                Text(
+                                    text = if (disableExtensionFilter) "Tous les fichiers" else "Filtre : .${fileFilterExtensions.joinToString(",")}",
+                                    fontSize = 10.sp
                                 )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.name,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = if (item.isDirectory) FontWeight.SemiBold else FontWeight.Normal,
-                                        maxLines = 1
+                            },
+                            leadingIcon = {
+                                Icon(imageVector = Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(12.dp))
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(320.dp)
+                ) {
+                    if (fileList.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FolderSpecial,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(44.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Aucun fichier correspondant trouvé",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            if (fileFilterExtensions.isNotEmpty() && !disableExtensionFilter) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                TextButton(onClick = { disableExtensionFilter = true }) {
+                                    Text("Désactiver le filtre d'extension", fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    } else {
+                        LazyColumn {
+                            items(fileList) { item ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            if (item.isDirectory) {
+                                                currentDir = item
+                                            } else {
+                                                onFileSelected(item)
+                                            }
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (item.isDirectory) Icons.Default.Folder else Icons.Default.Description,
+                                        contentDescription = null,
+                                        tint = if (item.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(20.dp)
                                     )
-                                    if (!item.isDirectory) {
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = "${item.length() / 1024} Ko",
+                                            text = item.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (item.isDirectory) FontWeight.Bold else FontWeight.Normal,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = if (item.isDirectory) "Dossier" else "${item.length() / 1024} Ko",
                                             style = MaterialTheme.typography.labelSmall,
                                             fontSize = 10.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
+                                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                             }
-                            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                         }
                     }
                 }

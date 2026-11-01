@@ -172,9 +172,11 @@ class ProjectEngine(
             }
 
             val children = if (isDir) {
-                currentFile.listFiles()?.sortedBy { it.name }?.map { child ->
-                    buildTree(child, relPath)
-                } ?: emptyList()
+                val list = currentFile.listFiles()?.toList() ?: emptyList()
+                val sortedChildren = list.sortedWith(
+                    compareByDescending<File> { it.isDirectory }.thenBy { it.name.lowercase() }
+                )
+                sortedChildren.map { child -> buildTree(child, relPath) }
             } else emptyList()
 
             return FileNode(
@@ -194,9 +196,13 @@ class ProjectEngine(
             )
         }
 
-        val activeNodes = extDir.listFiles()?.sortedBy { it.name }?.map { file ->
+        val fileList = extDir.listFiles()?.toList() ?: emptyList()
+        val sortedList = fileList.sortedWith(
+            compareByDescending<File> { it.isDirectory }.thenBy { it.name.lowercase() }
+        )
+        val activeNodes = sortedList.map { file ->
             buildTree(file, "")
-        }?.toMutableList() ?: mutableListOf()
+        }.toMutableList()
 
         // Detect deleted files
         val deletedRecords = savedRecords.filterKeys { !visitedRelativePaths.contains(it) }
@@ -219,6 +225,55 @@ class ProjectEngine(
             )
         }
 
-        return activeNodes
+        // Directories ALWAYS sorted first on top, then alphabetical
+        return activeNodes.sortedWith(
+            compareByDescending<FileNode> { it.isDirectory }
+                .thenBy { it.name.lowercase() }
+        )
+    }
+
+    /**
+     * Scans and returns all nodes strictly inside a given relative subfolder of the extracted directory,
+     * guaranteeing that directories are placed at the top before files.
+     */
+    suspend fun getProjectFolderContents(projectId: String, relativeFolder: String = ""): List<FileNode> {
+        val extDir = getExtractedDirectory(projectId)
+        val targetDir = if (relativeFolder.isEmpty()) extDir else File(extDir, relativeFolder)
+        if (!targetDir.exists() || !targetDir.isDirectory) return emptyList()
+
+        val savedRecords = database.fileRecordDao().getRecordsByProject(projectId).associateBy { it.relativePath }
+        val files = targetDir.listFiles()?.toList() ?: emptyList()
+
+        val nodes = files.map { file ->
+            val relPath = if (relativeFolder.isEmpty()) file.name else "$relativeFolder/${file.name}"
+            val isDir = file.isDirectory
+            val saved = savedRecords[relPath]
+            val currentSha = if (!isDir) fileEngine.calculateSha256(file) else ""
+            val diffState = when {
+                saved == null -> DiffState.ADDED
+                !isDir && saved.originalSha256.isNotEmpty() && saved.originalSha256 != currentSha -> DiffState.MODIFIED
+                else -> DiffState.UNMODIFIED
+            }
+
+            FileNode(
+                path = file.absolutePath,
+                relativePath = relPath,
+                name = file.name,
+                sizeBytes = if (isDir) 0L else file.length(),
+                isDirectory = isDir,
+                modifiedTimestamp = file.lastModified(),
+                permissions = saved?.permissions ?: if (isDir) "0755" else "0644",
+                uid = saved?.uid ?: 0,
+                gid = saved?.gid ?: 0,
+                selinuxContext = saved?.selinuxContext ?: "u:object_r:system_file:s0",
+                diffState = diffState,
+                sha256 = currentSha
+            )
+        }
+
+        return nodes.sortedWith(
+            compareByDescending<FileNode> { it.isDirectory }
+                .thenBy { it.name.lowercase() }
+        )
     }
 }
