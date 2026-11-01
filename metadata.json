@@ -1,0 +1,6 @@
+{
+  "name": "LABO",
+  "description": "Plateforme d'ingénierie et de reconstruction de ROM et GSI Android avec architecture modulaire et extensions LABX.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

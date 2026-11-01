@@ -1,0 +1,657 @@
+LABO PROJECT
+
+Description :
+
+LABO est un projet d'ingénierie Android conçu pour analyser, décompresser, modifier et reconstruire des ROM afin de permettre la création de nouvelles ROM à partir d'images existantes. Son objectif initial est de prendre en charge les fichiers IMG et les GSI, avec une évolution future vers les archives ZIP de Custom ROM et les fichiers payload.bin.
+LABO repose sur une architecture modulaire et évolutive, composée de moteurs spécialisés, de fonctionnalités internes et d'un système d'extensions appelé LABX. Le projet doit pouvoir s'enrichir progressivement, en intégrant de nouveaux outils, moteurs et mécanismes sans remettre en cause son architecture fondamentale.
+
+LABX constitue un véritable écosystème d'extensions. Une extension ne doit pas être un simple ZIP contenant quelques scripts, mais un outil autonome, structuré et capable de disposer de ses propres fonctionnalités, moteurs, ressources et arborescences. Elle doit pouvoir interagir avec les fonctionnalités internes, communiquer avec les autres extensions et exploiter les différents moteurs de LABO. Une extension LABX peut même intégrer ses propres moteurs et proposer des capacités avancées comparables, voire supérieures, à celles de certaines fonctionnalités natives de l'application.
+
+Enfin, LABO doit disposer d'une documentation technique approfondie, accessible depuis ses paramètres. Celle-ci doit constituer une véritable base de connaissances et une bible de développement décrivant son architecture, ses moteurs, ses fonctionnalités, ainsi que la structure, les règles de création, les mécanismes et les possibilités d'interopérabilité des extensions LABX.
+L'ambition de LABO est de devenir une plateforme d'ingénierie ROM extensible, dans laquelle les possibilités ne sont pas limitées aux fonctionnalités initialement développées, mais peuvent continuellement s'étendre grâce à un écosystème ouvert et profondément intégré.
+
+
+I- Principes non négociables
+
+Séparation de l'interface et de la logique métier.
+Indépendance des moteurs vis-à-vis de l'interface graphique.
+Autonomie et modularité de chaque moteur.
+Communication entre composants par des interfaces et contrats clairement définis.
+Interopérabilité entre moteurs internes et extensions LABX.
+Égalité des capacités d'intégration entre LABX et fonctionnalités natives.
+Faible couplage entre les composants.
+Réutilisabilité des moteurs et des services.
+Extensibilité sans modification obligatoire du cœur de LABO.
+Gestion explicite des dépendances et des compatibilités.
+Traçabilité et journalisation centralisées des opérations.
+Gestion standardisée des erreurs, résultats et états d'exécution.
+Testabilité indépendante de chaque composant.
+Documentation technique obligatoire et maintenue à jour.
+Rétrocompatibilité maîtrisée lors des évolutions.
+
+
+II- LES MOTEURS 
+Les moteurs constituent le cœur technique de LABO. Ce sont des composants autonomes spécialisés qui assurent les opérations d'analyse, d'extraction, de modification, de vérification et de reconstruction des ROM Android. Ils peuvent travailler ensemble, être utilisés par plusieurs fonctionnalités et communiquer avec les extensions LABX, tout en restant indépendants de l'interface graphique. Les extensions LABX peuvent également intégrer leurs propres moteurs ou devenir elles-mêmes des moteurs à part entière, avec leurs propres capacités et mécanismes.
+Il existe des moteurs fondamentaux, des moteurs d'ingénierie ROM, d'analyse et de contrôle et les moteurs d’extensibilité.
+
+1- Core engine : Cœur de coordination technique de LABO. Il assure le fonctionnement global et l'interaction entre les différents composants.
+Responsabilités :
+Coordonner les moteurs et les fonctionnalités.
+Gérer les tâches et leur progression.
+Organiser la communication entre les composants.
+Gérer les dépendances et les événements.
+Centraliser la gestion des erreurs.
+Détecter et gérer les moteurs disponibles.
+Superviser le cycle de vie des composants.
+Permettre l'interaction avec les extensions LABX.
+Principe : CORE ENGINE doit fonctionner indépendamment de l'interface graphique et des moteurs spécialisés. Il coordonne les opérations sans effectuer lui-même leurs traitements techniques.
+
+2- FILE ENGINE
+Rôle : Moteur central de gestion, de manipulation, d'accès et de contrôle des fichiers et des structures de dossiers dans LABO.
+Responsabilités :
+Gestion des fichiers : lire, créer, modifier, copier, déplacer, renommer et supprimer des fichiers.
+Gestion des dossiers : créer, parcourir, organiser et manipuler des arborescences complexes.
+Analyse des fichiers : identifier les formats, extensions, types, signatures et caractéristiques.
+Surveillance : détecter les créations, suppressions et modifications, y compris celles effectuées en dehors de LABO.
+Métadonnées : lire et gérer les permissions, propriétaires, dates, attributs et autres propriétés accessibles.
+Intégrité : calculer les empreintes cryptographiques et détecter les altérations.
+Gestion des flux : traiter les lectures et écritures volumineuses sans charger inutilement tous les fichiers en mémoire.
+Compression : fournir les opérations de compression et décompression nécessaires aux autres composants.
+Recherche : rechercher des fichiers, dossiers et contenus selon différents critères.
+Gestion des accès : contrôler les accès aux espaces de stockage et aux ressources autorisées.
+Gestion des fichiers temporaires : créer, suivre et nettoyer les ressources temporaires.
+Interopérabilité : fournir ses services aux moteurs internes et aux extensions LABX.
+Principe : FILE ENGINE doit être indépendant de l'interface graphique et fournir une API commune de manipulation des fichiers à tout l'écosystème LABO.
+
+
+3- PROJECT ENGINE
+Rôle : Moteur responsable de la création, de la gestion et du suivi des projets de travail dans LABO.
+Responsabilités :
+Création des projets : créer des projets à partir d'images, de GSI ou d'autres sources prises en charge.
+Organisation : gérer la structure, les dossiers et les ressources propres à chaque projet.
+Configuration : conserver les paramètres, caractéristiques et informations techniques associés au projet.
+Suivi : enregistrer les opérations effectuées et l'état d'avancement.
+Historique : conserver les modifications et les différentes étapes de traitement.
+Reprise : permettre de retrouver et poursuivre un projet après fermeture de LABO.
+Gestion des versions : suivre les différentes versions et états du projet.
+Sauvegarde : assurer la sauvegarde et la restauration des données du projet.
+Interopérabilité : fournir les informations du projet aux moteurs, fonctionnalités et extensions LABX.
+Principe : PROJECT ENGINE doit gérer le cycle de vie complet des projets indépendamment de leur interface d'affichage et des moteurs qui les exploitent.
+4- ANALYST ENGINE
+Rôle : Moteur central d'analyse technique de LABO. Il examine les ROM Android, leurs partitions, leurs fichiers et leurs configurations afin d'en extraire des informations techniques structurées.
+Responsabilités :
+Identification : reconnaître les formats, composants et structures présents dans une ROM.
+Analyse des partitions : examiner leur contenu, leur organisation et leurs caractéristiques.
+Analyse des fichiers : identifier les APK, bibliothèques, scripts, configurations et autres éléments techniques.
+Extraction des métadonnées : recueillir les permissions, propriétés, attributs et informations système.
+Analyse des dépendances : repérer les liens techniques entre les composants.
+Production de rapports : générer des résultats détaillés et structurés sur les éléments analysés.
+Base de connaissances : enrichir la base de données technique de LABO avec les informations recueillies.
+Interopérabilité : transmettre ses résultats aux autres moteurs, fonctionnalités et extensions LABX.
+Principe : ANALYST ENGINE analyse et interprète les éléments techniques sans les modifier ni les reconstruire. Il fournit aux autres composants les informations nécessaires pour travailler intelligemment. Il reste indépendant de l'interface graphique.
+
+5-  FORGE IMG ENGINE
+
+Rôle : Moteur spécialisé dans l'extraction (Unpack), l'analyse et la reconstruction (Repack) des images de partitions Android.
+Formats et détection : Prise en charge des formats d'images Android, notamment ext4, EROFS, sparse et raw. Et détection automatique du système de fichiers, du format, de la compression et des paramètres techniques.
+Unpack et espace de travail : Extraction intégrale dans les données de LABO (il faut donc structuré les données de l’application). Création automatique d'un projet indépendant par Unpack, accessible depuis le gestionnaire de projets. Organisation des fichiers extraits, configurations, ressources et fichiers temporaires. Conservation des projets et possibilité de reprendre leur traitement après fermeture de l'application.
+Configurations et métadonnées : Génération automatique d'un dossier "config" contenant toutes les données nécessaires à la reconstruction : format, filesystem, compression, block size, arborescence, symlinks, permissions, UID/GID, modes, contextes SELinux, xattrs, capacités, informations sparse et partitionnement. Conservation des fichiers "fs_config" et "file_contexts", lorsqu'applicables. Organisation des métadonnées dans des fichiers spécialisés, exhaustifs et exploitables automatiquement. Conservation distincte des métadonnées originales et recalculées après modification.
+Repack intelligent : Reconstruction à partir du projet et de ses configurations, avec détection des modifications. Restauration des caractéristiques originales et adaptation automatique aux changements. Préservation des métadonnées valides et régénération de "fs_config" et "file_contexts" si nécessaire. Prise en charge des reconstructions successives sans perte des données du projet.
+Sorties et intégrité : Export automatique des images reconstruites vers "sdcard/LABO/REPACK". Vérification de la cohérence, des métadonnées et de l'intégrité des images. Détection et signalement des erreurs, incompatibilités et informations manquantes.
+Principe fondamental : Chaque Unpack génère un projet autonome et documenté techniquement. Chaque Repack exploite ces données pour reconstruire fidèlement l'image originale, tout en intégrant les modifications effectuées.
+
+
+6- FILESYSTEM ENGINE
+
+Rôle : Moteur spécialisé dans la gestion, l'analyse et la manipulation des systèmes de fichiers utilisés dans les ROM Android.
+
+- Systèmes de fichiers : prise en charge d'ext4, EROFS et autres formats compatibles. Détection et analyse de leurs structures et paramètres techniques.
+- Manipulation : création, formatage, lecture, inspection et vérification des systèmes de fichiers. Gestion des fichiers, dossiers, blocs, permissions, UID/GID, symlinks et métadonnées.
+- Reconstruction : création et reconstruction de systèmes de fichiers à partir d'arborescences, avec configuration des paramètres techniques et préservation des métadonnées.
+- Vérification : détection des corruptions, erreurs et incompatibilités, contrôle de la cohérence et de l'intégrité.
+- Interopérabilité : mise à disposition de ses capacités aux autres moteurs et extensions LABX.
+
+Principe fondamental : FILESYSTEM ENGINE gère les opérations propres aux systèmes de fichiers. Il fournit notamment à FORGE IMG ENGINE les capacités nécessaires à l'extraction et à la reconstruction des images de partitions Android.
+
+7- PARTITION ENGINE
+
+Rôle : Moteur spécialisé dans l'analyse, la gestion et la manipulation de la structure des partitions Android.
+
+- Analyse : détection des partitions, de leurs noms, tailles, formats, types et caractéristiques.
+- Gestion : lecture et interprétation des tables de partitionnement, notamment GPT, ainsi que des informations de disposition et d'organisation des partitions.
+- Manipulation : création, suppression, redimensionnement et modification des partitions, selon les formats et contraintes pris en charge.
+- Configuration : gestion des offsets, tailles, limites, alignements et attributs des partitions.
+- Vérification : détection des chevauchements, incohérences, erreurs de disposition et incompatibilités.
+- Interopérabilité : transmission des informations de partitionnement aux autres moteurs, notamment FORGE IMG ENGINE, FILESYSTEM ENGINE et ROM BUILDER.
+
+Principe fondamental : PARTITION ENGINE gère la structure et l'organisation des partitions d'un appareil ou d'une image Android. Il ne réalise pas lui-même l'extraction ou la reconstruction interne des systèmes de fichiers.
+
+8- ARCHIVE ENGINE
+
+Rôle : Moteur spécialisé dans la gestion, l'analyse, l'extraction et la création d'archives utilisées dans les ROM Android.
+
+- Formats : prise en charge des formats ZIP, TAR, GZIP, XZ et autres formats d'archives compatibles.
+- Extraction : décompression complète ou sélective des archives, avec préservation de l'arborescence et des métadonnées prises en charge.
+- Création : génération et recompression d'archives à partir de fichiers et de dossiers, avec configuration des méthodes et niveaux de compression.
+- Manipulation : ajout, remplacement, suppression et mise à jour de fichiers dans les archives, lorsque le format le permet.
+- Vérification : contrôle de l'intégrité, détection des archives corrompues et gestion des erreurs d'extraction.
+- Interopérabilité : mise à disposition de ses capacités aux autres moteurs et extensions LABX.
+
+Principe fondamental : ARCHIVE ENGINE gère les conteneurs d'archives et leur contenu. Il ne prend pas en charge la reconstruction interne des images de partitions, qui relève notamment de FORGE IMG ENGINE et FILESYSTEM ENGINE.
+
+9- SIGNER ENGINE
+
+Rôle : Moteur spécialisé dans l'analyse forensique des signatures Android, la gestion et la création de clés cryptographiques, la re-signature des APK, la reconstitution de profils de signature et l'analyse des chaînes de confiance des images Android, notamment AVB et "vbmeta".
+
+Analyse forensique des signatures APK
+
+- Analyse exhaustive des signatures d'un APK, qu'elles soient valides, invalides, absentes ou partiellement présentes.
+- Identification automatique des mécanismes de signature : V1, V2, V3 et V4, avec prise en compte des particularités de chaque schéma.
+- Extraction des certificats, chaînes de certificats, clés publiques, algorithmes, paramètres cryptographiques et informations de signature.
+- Extraction des DN complets : "CN", "OU", "O", "L", "ST", "C" et autres attributs présents dans les certificats.
+- Analyse des dates de validité, numéros de série, extensions, usages de clés, empreintes et identifiants des certificats.
+- Extraction des condensats, hashes, empreintes cryptographiques et données Base64 disponibles dans les structures analysées.
+- Analyse des structures ASN.1 et DER des certificats et objets cryptographiques, lorsque applicable.
+- Identification des données publiques, privées, chiffrées ou manquantes, selon les éléments réellement accessibles.
+- Production d'un rapport brut complet contenant les données extraites, les structures analysées, les résultats de vérification et les éventuelles anomalies.
+- Comparaison de plusieurs APK afin d'identifier les différences de certificats, de clés publiques, de schémas de signature et de paramètres cryptographiques.
+
+Détection et classification automatique des clés
+
+- Détection et classification des clés cryptographiques présentes dans les fichiers analysés.
+- Identification des clés publiques, clés privées, certificats, signatures et données cryptographiques associées.
+- Identification des algorithmes et paramètres : RSA, DSA, EC, EdDSA et autres mécanismes pris en charge.
+- Détection des clés privées chiffrées et identification des formats nécessitant un secret ou une opération de déchiffrement autorisée.
+- Distinction entre une clé privée absente, une clé privée inaccessible, une clé privée chiffrée et une clé dont le format n'est pas reconnu.
+- Vérification de la correspondance entre une clé privée et sa clé publique ou son certificat associé, lorsque les éléments nécessaires sont disponibles.
+- Détermination des usages possibles d'une clé : signature, vérification ou autres opérations compatibles.
+- Génération d'un rapport précisant la nature des éléments détectés et le niveau de certitude de leur classification.
+
+Création et gestion des clés
+
+- Création de nouvelles clés cryptographiques et de nouveaux ensembles de clés (key sets), sans dépendre d'une clé préexistante.
+- Génération de certificats associés aux clés créées, avec configuration des DN, algorithmes, paramètres, dates de validité et autres attributs disponibles.
+- Gestion des clés privées, clés publiques, certificats, keystores et profils de signature.
+- Importation et utilisation de clés fournies par l'utilisateur.
+- Organisation des clés par projet, application, profil ou usage cryptographique.
+- Protection des clés privées et contrôle de leur accès.
+- Exportation des certificats et clés publiques dans les formats pris en charge, avec gestion sécurisée des éventuelles exportations de clés privées.
+- Vérification de la cohérence des paires de clés et des certificats générés ou importés.
+
+Re-signature des APK
+
+- Re-signature d'un APK existant à l'aide d'une clé fournie ou d'une nouvelle clé générée par SIGNER ENGINE.
+- Préservation des fichiers, ressources, manifeste et contenu fonctionnel de l'APK, dans la mesure où les opérations de signature le permettent.
+- Suppression des anciennes signatures devenues invalides, puis application des nouvelles signatures.
+- Prise en charge des schémas V1, V2, V3 et V4 selon les exigences de l'application et les outils compatibles.
+- Gestion des particularités de V4, notamment son fichier de signature externe "idsig".
+- Vérification de l'intégrité de l'APK après re-signature et confirmation de la validité des nouvelles signatures.
+- Détection des incompatibilités susceptibles d'affecter l'installation, la mise à jour ou le fonctionnement de l'application.
+- Conservation d'un rapport détaillé avant et après re-signature.
+- Vérification que les modifications apportées au fichier sont limitées aux opérations nécessaires à la re-signature.
+
+Reproduction d'une identité cryptographique
+
+- Analyse de l'identité de signature d'un APK cible afin d'en extraire les caractéristiques publiques du certificat.
+- Création d'un nouveau trousseau cryptographique utilisant de nouveaux DN et une nouvelle clé privée.
+- Possibilité de reproduire les attributs visibles du certificat cible, dans les limites des champs et paramètres disponibles.
+- Génération d'un certificat présentant une identité descriptive similaire ou configurée à partir du certificat cible.
+- Comparaison entre le certificat original et le nouveau certificat : DN, algorithmes, paramètres, extensions, empreintes et différences cryptographiques.
+- Conservation des caractéristiques descriptives souhaitées, tout en générant de nouveaux éléments cryptographiques.
+- Indication explicite des éléments qui ne peuvent pas être reproduits sans la clé privée originale.
+
+Distinction essentielle : un nouveau certificat peut reprendre les mêmes DN ou une identité descriptive similaire, mais il ne devient pas le certificat original. Sa clé publique, son empreinte et son identité cryptographique seront différentes.
+
+Reconstitution intelligente de la logique de signature
+
+- Analyse de la structure et du fonctionnement des mécanismes de signature utilisés par un APK.
+- Identification des algorithmes, paramètres, structures, formats et éléments cryptographiques impliqués.
+- Reconstitution d'un profil de signature équivalent dans son fonctionnement, à partir des informations publiques et des structures analysables.
+- Génération d'une nouvelle paire de clés compatible avec le profil cryptographique observé, lorsque cela est possible.
+- Génération d'une nouvelle signature selon une logique comparable, avec de nouvelles clés et des paramètres cryptographiques adaptés.
+- Reproduction des caractéristiques publiques et structurelles de la signature, sans prétendre reproduire l'identité cryptographique originale.
+- Comparaison entre le mécanisme original et le mécanisme reconstruit, avec rapport des différences.
+- Distinction entre la reconstitution d'un mécanisme public et la récupération d'une clé privée, qui ne peut pas être déduite simplement d'une signature ou d'un certificat.
+
+Analyse de la chaîne de confiance des images Android
+
+- Analyse des mécanismes de signature et de vérification associés aux images Android.
+- Identification des composants signés, des clés publiques, des certificats et des métadonnées cryptographiques disponibles.
+- Étude des relations de confiance entre les composants de démarrage, les images de partitions et les mécanismes Android Verified Boot.
+- Analyse des dépendances entre les éléments de la chaîne de confiance et identification des ruptures ou incohérences.
+- Détection des composants modifiés, des signatures invalides, des clés inconnues et des informations de confiance manquantes.
+- Production d'un rapport décrivant la chaîne de confiance observée, ses éléments vérifiables et ses limites.
+- Identification des composants nécessitant une nouvelle signature après modification d'une image ou d'une partition.
+
+Analyse et reconstruction de VBMeta / Android Verified Boot
+
+- Analyse exhaustive des images "vbmeta" et des structures AVB prises en charge.
+- Extraction des métadonnées, des descripteurs, des informations de signature, des clés publiques et des paramètres AVB.
+- Analyse des descripteurs de hash et de hashtree, des informations de rollback index et des relations avec les partitions concernées.
+- Identification des partitions couvertes par les mécanismes de vérification et des paramètres associés.
+- Vérification de la cohérence des métadonnées, des signatures et des données de vérification.
+- Reconstruction et génération de nouvelles images "vbmeta" à partir de configurations et de clés disponibles.
+- Adaptation des métadonnées AVB aux modifications effectuées sur les partitions concernées.
+- Signature des nouvelles images "vbmeta" avec une clé autorisée par l'utilisateur.
+- Vérification de l'image reconstruite et production d'un rapport détaillant les modifications et résultats.
+- Analyse des paramètres de confiance et des contraintes de démarrage pouvant affecter l'acceptation de l'image reconstruite.
+
+Rapports et interopérabilité
+
+- Génération de rapports lisibles et de rapports bruts exhaustifs, exploitables par les développeurs et les autres moteurs.
+- Conservation des résultats d'analyse, des paramètres utilisés et des opérations effectuées.
+- Mise à disposition des fonctions de SIGNER ENGINE aux autres moteurs, fonctionnalités et extensions LABX.
+- Intégration avec ANALYST ENGINE, FORGE IMG ENGINE, BOOT ENGINE, PARTITION ENGINE, ROM BUILDER et VALIDATOR ENGINE.
+- Fourniture d'interfaces permettant aux autres moteurs de demander une analyse, une signature, une vérification ou une reconstruction cryptographique.
+
+Principe fondamental : SIGNER ENGINE analyse, crée, vérifie et applique les mécanismes cryptographiques Android. Il identifie automatiquement la nature des éléments cryptographiques accessibles et peut générer de nouvelles clés pour reconstruire un profil de signature suivant la même logique que la cible. Il distingue la reproduction des caractéristiques publiques, la compatibilité du mécanisme de signature et l'identité cryptographique réelle du signataire.
+
+
+10- ARTIFACT ENGINE
+
+Rôle : Moteur spécialisé dans l'analyse, la gestion, la vérification et la régénération des artefacts compilés et des métadonnées techniques utilisés par Android Runtime et les systèmes Android.
+
+- Détection et analyse : identification des artefacts présents dans une ROM, de leur format, de leur version, de leur architecture et de leurs dépendances.
+- Artefacts ART : prise en charge des fichiers ".oat", ".odex", ".vdex" et des autres artefacts compatibles avec ART.
+- Analyse des artefacts : inspection des métadonnées, du bytecode compilé, des informations de vérification, des dépendances et des paramètres de compilation.
+- Régénération : reconstruction des artefacts à partir des fichiers DEX, APK, bibliothèques et ressources nécessaires, lorsque les outils et l'environnement de compilation sont disponibles.
+- Compilation ART : intégration avec "dex2oat" et les outils compatibles afin de générer des artefacts adaptés à la version Android, à l'architecture cible et aux paramètres de compilation.
+- Gestion des profils : prise en charge des profils de compilation et des métadonnées associées, lorsque ceux-ci sont disponibles et exploitables.
+- Cohérence système : détection des artefacts obsolètes ou incompatibles après modification d'un APK, d'une bibliothèque, du runtime ou d'une partition.
+- Régénération sélective : identification des artefacts à reconstruire après une modification, afin d'éviter une recompilation inutile de l'ensemble de la ROM.
+- Métadonnées de fichiers : prise en charge des métadonnées de vérification et d'intégrité, notamment celles liées à fs-verity lorsque le système de fichiers et les outils compatibles sont disponibles.
+- Vérification : contrôle de la cohérence des artefacts générés, de leurs dépendances et de leur compatibilité avec l'environnement Android ciblé.
+- Interopérabilité : communication avec FILE ENGINE, MAPPING ENGINE, FORGE IMG ENGINE, LES FUTURES ENGINE et les extensions LABX.
+
+Principe fondamental : ARTIFACT ENGINE gère les artefacts générés par Android et ses mécanismes de compilation. Il peut les analyser, déterminer lesquels sont devenus obsolètes et les régénérer à partir de leurs sources et d'un environnement compatible. Il ne garantit pas une reconstruction valide si les sources, les outils, les bibliothèques ou les paramètres requis sont absents.
+
+
+11- MAPPING ENGINE
+
+Rôle : Moteur spécialisé dans la cartographie des composants d'une ROM Android, de leurs dépendances et de leurs relations techniques. Il construit une représentation structurée de la ROM afin de comprendre son organisation, d'anticiper l'impact des modifications et de faciliter sa reconstruction.
+
+Cartographie de la ROM
+
+- Création d'une cartographie globale des partitions, fichiers, dossiers, applications, bibliothèques, services et composants Android.
+- Organisation des éléments selon leur emplacement, leur type, leur fonction et leurs relations.
+- Identification des composants appartenant à "system", "system_ext", "product", "vendor", "odm", "boot", "init_boot", "vendor_boot" et autres partitions prises en charge.
+- Construction d'une représentation hiérarchique et graphique de la structure de la ROM.
+- Association des éléments cartographiés aux données techniques fournies par les futurs moteur d'analyse de fichiers comme apktool engine et tout projet futur visant à analyser les fichiers.
+
+Analyse des dépendances
+
+- Identification des dépendances entre applications, bibliothèques, services, fichiers de configuration et composants système.
+- Cartographie des relations entre APK, bibliothèques natives, services, permissions, propriétés système et composants de démarrage.
+- Identification des dépendances inter-partitions et des composants partagés.
+- Détection des références vers des fichiers, bibliothèques ou composants absents.
+- Distinction entre dépendances obligatoires, facultatives, conditionnelles et non confirmées, selon les informations disponibles.
+
+Analyse d'impact des modifications
+
+- Identification des composants susceptibles d'être affectés par la modification, la suppression ou le remplacement d'un élément.
+- Détermination des dépendances à préserver lors d'une modification.
+- Détection des risques de rupture, d'incompatibilité ou de dépendance manquante.
+- Identification des composants devant être adaptés, re-signés ou reconstruits après une modification.
+- Fourniture d'une analyse d'impact avant l'exécution d'une opération par un autre moteur.
+
+Cartographie des signatures et de la confiance
+
+- Association des APK à leurs informations de signature et à leurs identités cryptographiques connues.
+- Cartographie des relations entre applications partageant une identité de signature ou utilisant des mécanismes de rotation de clés, lorsque ces informations sont disponibles.
+- Association des partitions aux métadonnées de vérification et aux mécanismes AVB concernés.
+- Cartographie des relations entre "vbmeta", ses descripteurs et les partitions qu'il couvre.
+- Intégration des rapports fournis par SIGNER ENGINE, notamment les clés publiques, certificats, empreintes, résultats de vérification et informations de confiance.
+- Identification des composants dont les signatures ou métadonnées de vérification devront être mises à jour après une modification.
+- Distinction entre une relation cryptographique vérifiée et une relation seulement supposée ou non confirmée.
+
+Cartographie visuelle et navigation
+
+- Génération de graphes de dépendances, de cartes hiérarchiques et de vues relationnelles.
+- Navigation entre les composants et leurs dépendances directes ou indirectes.
+- Recherche d'un composant dans la cartographie et affichage de ses relations.
+- Filtrage par partition, type, fonction, niveau de dépendance, signature ou état.
+- Exportation des cartographies dans des formats structurés exploitables par LABO et les extensions LABX.
+
+Interopérabilité
+
+- Exploitation des résultats de FILE ANALYSIS ENGINE et ANALYST ENGINE pour construire les cartes et les relations.
+- Communication avec PROJECT ENGINE pour associer les cartographies aux projets LABO.
+- Échange de données avec SIGNER ENGINE pour intégrer les informations cryptographiques et signaler les éléments nécessitant une opération de signature ou de vérification.
+- Fourniture des dépendances et analyses d'impact à ROM BUILDER, à FORGE et aux autres moteurs.
+- Mise à disposition de ses capacités aux fonctionnalités de LABO et aux extensions LABX.
+
+Principe fondamental : MAPPING ENGINE organise les informations techniques en une cartographie des composants, de leurs relations et de leurs dépendances. Il peut intégrer les résultats cryptographiques de SIGNER ENGINE et déterminer les éléments concernés par une opération de signature, mais il ne réalise pas lui-même les opérations cryptographiques. Il fournit aux autres moteurs une représentation exploitable pour comprendre les conséquences des opérations et préserver la cohérence du système.
+
+
+III- LABX — ARCHITECTURE FONDAMENTALE
+
+LABX ENGINE INSTALLER
+
+Rôle : LABX ENGINE INSTALLER est le composant responsable de l’installation, de la mise à jour, de la validation et de la désinstallation des extensions LABX dans l’environnement LABO.
+
+Il permet d’intégrer une extension à LABO sans nécessiter une modification manuelle de l’application principale.
+
+Installation des extensions
+
+- Détecter les paquets d’extension LABX compatibles.
+- Vérifier leur structure et les fichiers nécessaires à leur installation.
+- Lire les informations du manifeste de l’extension.
+- Vérifier les exigences de compatibilité avec LABO et LABX Framework.
+- Préparer l’installation des fichiers et modules de l’extension.
+- Enregistrer l’extension dans le système de gestion LABX.
+- Déclencher son initialisation par les composants appropriés.
+
+Mise à jour et désinstallation
+
+- Détecter les versions déjà installées.
+- Vérifier la compatibilité d’une nouvelle version.
+- Mettre à jour une extension en préservant, lorsque cela est possible, ses données utilisateur et ses configurations.
+- Permettre la désinstallation complète d’une extension.
+- Identifier les données et dépendances qui pourraient être affectées par sa suppression.
+- Prévenir les pertes de données non nécessaires.
+- Maintenir un état cohérent du système après chaque opération.
+
+Validation et intégrité
+
+- Vérifier l’intégrité du paquet d’installation.
+- Détecter les fichiers manquants ou les structures invalides.
+- Vérifier les informations d’identification et de version.
+- Contrôler la compatibilité du paquet avec le système LABX.
+- Produire un rapport d’installation, de mise à jour ou d’échec.
+
+Principe fondamental : LABX ENGINE INSTALLER gère le cycle d’installation des extensions. Il ne constitue pas leur environnement d’exécution et ne réalise pas lui-même les opérations internes de leurs moteurs.
+
+LABX FRAMEWORK
+
+Rôle : LABX FRAMEWORK constitue l’environnement commun de développement, d’intégration et de communication des extensions LABX. Il permet aux extensions de comprendre les fonctionnalités de LABO, d’utiliser ses moteurs, d’accéder aux données de projets autorisées et de communiquer avec les autres composants de l’écosystème.
+
+Il fournit une architecture commune aux extensions, comparable à celle utilisée par les fonctionnalités internes de LABO, tout en leur permettant de posséder leurs propres moteurs, traitements, composants et layouts.
+
+Compréhension des fonctionnalités de LABO
+
+- Exposer aux extensions une description structurée des fonctionnalités de base de LABO.
+- Permettre aux extensions de découvrir les fonctionnalités et moteurs disponibles.
+- Décrire le rôle, les capacités, les entrées, les sorties et les paramètres des moteurs exposés.
+- Permettre aux extensions de comprendre les possibilités offertes par LABO sans accéder directement au code interne de ses composants.
+- Intégrer les nouvelles fonctionnalités et les nouveaux moteurs ajoutés à LABO.
+- Maintenir une interface documentée permettant aux extensions de s’adapter aux évolutions de LABO.
+
+Communication entre les moteurs
+
+- Fournir des interfaces communes de communication entre les moteurs de LABO et les moteurs des extensions.
+- Permettre à un moteur LABX d’appeler un moteur LABO via une API documentée.
+- Permettre aux moteurs de transmettre des paramètres, des résultats, des événements et des erreurs structurés.
+- Permettre l’enchaînement de plusieurs moteurs dans une même opération.
+- Faciliter la communication entre les moteurs de différentes extensions lorsque leurs interfaces le permettent.
+- Éviter les dépendances directes au code interne des moteurs.
+
+Accès aux projets et aux données de LABO
+
+- Fournir une interface documentée d’accès aux projets LABO.
+- Permettre aux extensions de consulter la structure, les fichiers, les configurations et l’état des projets selon leurs permissions.
+- Exposer les métadonnées et relations disponibles dans la base de données des projets.
+- Permettre aux extensions de comprendre les opérations déjà réalisées et les résultats disponibles.
+- Fournir les mécanismes nécessaires pour demander des modifications contrôlées des données.
+- Préserver la cohérence de la base de données en évitant les modifications directes non contrôlées.
+
+Architecture des extensions
+
+- Fournir une structure commune aux projets LABX.
+- Permettre aux extensions de posséder leurs propres fonctionnalités et moteurs.
+- Permettre l’intégration de modules Kotlin, Java, Rust, Go, C/C++ et d’autres technologies compatibles.
+- Permettre l’utilisation de fichiers TOML pour les manifestes et configurations.
+- Fournir des API communes pour les ressources, les événements, les tâches, les erreurs et les résultats.
+- Permettre aux extensions de suivre une architecture comparable à celle des fonctionnalités internes de LABO.
+
+Interface et layouts
+
+- Conserver l’interface générale de LABO comme environnement visuel commun.
+- Permettre aux extensions d’utiliser les composants visuels et les conventions d’interface de LABO.
+- Permettre à chaque extension de définir son propre layout interne.
+- Autoriser des vues, panneaux, onglets, éditeurs et espaces de travail adaptés à sa fonction.
+- Séparer le layout de l’extension de sa logique technique.
+
+Évolution et compatibilité
+
+- Permettre au Framework d’intégrer les futures fonctionnalités et les futurs moteurs de LABO.
+- Maintenir des contrats de communication documentés et versionnés.
+- Détecter les incompatibilités entre une extension et une version du Framework.
+- Faciliter l’évolution des extensions lorsque LABO ajoute de nouvelles capacités.
+- Permettre l’ajout de nouvelles API sans imposer une réécriture globale de l’écosystème.
+
+Principe fondamental : LABX FRAMEWORK est la couche commune qui permet aux extensions de comprendre et d’exploiter LABO. Il fournit les interfaces nécessaires pour communiquer avec les moteurs, accéder aux projets, intégrer de nouvelles capacités et construire des workflows complexes, tout en maintenant l’indépendance des composants et la cohérence de l’architecture.
+
+
+
+
+
+IV- INTERFACE GÉNÉRALE DE LABO — ACCUEIL ET RAIL DE NAVIGATION
+
+1. Interface d’accueil
+
+L’accueil constitue l’interface principale de LABO. Il doit adopter un design Material 3 moderne, simple, épuré et intuitif. L’objectif est de proposer un environnement de travail professionnel, agréable et facile à utiliser, sans surcharge visuelle.
+
+L’interface doit privilégier la lisibilité, une hiérarchie visuelle claire, des espacements équilibrés et une navigation fluide.
+
+Identité visuelle et thème
+
+L’interface doit suivre le thème sélectionné dans les paramètres de LABO :
+
+- Clair
+- Sombre
+- Suivant le système Android
+
+Le design doit respecter les principes Material 3, notamment les surfaces adaptatives, les formes arrondies, les contrastes lisibles et les couleurs dynamiques.
+
+L’utilisateur doit pouvoir personnaliser la couleur principale de l’interface depuis les paramètres.
+
+L’accueil doit rester minimaliste. Les effets décoratifs, les dégradés, les ombres et les éléments graphiques doivent être utilisés avec modération. Les couleurs doivent servir à identifier les fonctionnalités et à guider l’utilisateur, sans distraire de son travail.
+
+Organisation de l’accueil
+
+L’accueil présente les fonctionnalités disponibles sous forme d’une liste verticale claire et compacte.
+
+Chaque fonctionnalité est représentée par :
+
+- Une icône facilement identifiable.
+- Le nom de la fonctionnalité.
+- Une zone interactive permettant d’ouvrir cette fonctionnalité.
+
+Les cartes doivent être simples, avec des dimensions cohérentes, des espacements réguliers et une hiérarchie visuelle uniforme.
+
+Elles ne doivent pas contenir de descriptions longues ni d’informations techniques inutiles sur l’accueil.
+
+Les fonctionnalités disponibles au lancement sont :
+
+- FORGE
+- SIGNALAB
+- Les extensions LABX installées
+
+Les fonctionnalités futures et les extensions LABX doivent pouvoir être ajoutées automatiquement à l’accueil au fur et à mesure de leur installation ou de leur création, sans nécessiter une refonte de l’interface.
+
+Comportement des fonctionnalités
+
+Lorsqu’une fonctionnalité est sélectionnée, LABO ouvre son interface dédiée.
+
+Chaque fonctionnalité peut disposer de son propre layout et de ses propres composants internes, mais elle doit conserver l’identité visuelle générale de LABO.
+
+Les fonctionnalités doivent partager les mêmes principes de navigation, de typographie, de couleurs, d’espacement, de surfaces et d’animations.
+
+L’accueil constitue le modèle visuel de référence pour les fonctionnalités de LABO et les extensions LABX.
+
+---
+
+2. Rail de navigation latérale
+
+Le rail de navigation latérale constitue le principal moyen de navigation globale dans LABO. Il doit permettre à l’utilisateur d’accéder rapidement à l’accueil, à l’action en cours, aux paramètres et au terminal intégré.
+
+Il s’agit d’un composant global de LABO, accessible depuis les différentes fonctionnalités. Il ne doit pas être recréé séparément dans chaque écran.
+
+Le rail doit être conçu selon les principes Material 3, avec une apparence simple, épurée et cohérente avec l’ensemble de l’application.
+
+Structure du rail
+
+Le rail comporte quatre destinations principales :
+
+Accueil
+
+Permet de revenir à l’interface principale de LABO.
+
+L’accueil présente la liste verticale des fonctionnalités disponibles et des extensions LABX installées.
+
+Action
+
+Permet de revenir à l’action actuellement déclenchée, quelle que soit la fonctionnalité depuis laquelle elle a été lancée.
+
+Lorsqu’une opération est en cours, cette destination permet de retrouver son interface et de suivre son déroulement.
+
+Lorsqu’aucune action n’est active, la destination Action ramène l’utilisateur à l’accueil de LABO.
+
+Paramètres
+
+Ouvre l’interface des paramètres généraux de LABO.
+
+Cette interface permet notamment de :
+
+- Choisir le thème clair, sombre ou suivant le système.
+- Personnaliser la couleur principale de l’interface Material 3.
+- Accéder à la documentation complète de LABO.
+- Accéder à la documentation PDF du template des extensions LABX.
+
+Terminal
+
+Ouvre le terminal intégré de LABO.
+
+Le terminal peut être ouvert depuis n’importe quelle fonctionnalité, sans interrompre l’action en cours.
+
+Il permet de consulter les logs en temps réel et de saisir des commandes.
+
+Le terminal doit pouvoir être minimisé, déplié partiellement ou affiché de manière plus complète.
+
+États du rail
+
+Le rail possède deux états :
+
+État replié
+
+Seules les icônes des destinations sont affichées.
+
+État déplié
+
+Les icônes sont accompagnées de leurs libellés.
+
+Le rail doit pouvoir passer d’un état à l’autre à l’aide d’une animation fluide et expressive.
+
+L’état sélectionné doit être clairement identifiable grâce à un indicateur Material 3 discret. La sélection doit rester visible même lorsque le rail est replié.
+
+Le rail doit conserver son comportement lors de la navigation entre les différentes fonctionnalités de LABO.
+
+Motion Design du rail
+
+Le dépliement et le repliement du rail doivent utiliser une animation dynamique, fluide et naturelle.
+
+Les icônes et les libellés doivent apparaître progressivement au cours de la transition, sans déplacement brusque ni effet excessif.
+
+La sélection d’une destination doit être accompagnée d’une transition visuelle légère.
+
+Les animations doivent rester rapides, discrètes et optimisées pour les appareils Android.
+
+Le rail doit respecter les préférences système de réduction des animations lorsque celles-ci sont disponibles.
+
+Intégration du terminal
+
+Le terminal intégré est un composant transversal de LABO.
+
+Lorsqu’il est ouvert depuis le rail, il doit apparaître au-dessus de l’interface courante sans forcer l’utilisateur à quitter la fonctionnalité en cours.
+
+Il doit pouvoir être :
+
+- Minimisé totalement.
+- Déplié partiellement en l’étirant vers le haut ou vers le bas.
+- Affiché de manière plus complète pour consulter les logs ou saisir des commandes.
+
+Le terminal doit conserver le contexte de l’action en cours et afficher les logs correspondants en temps réel.
+
+Principe d’intégration
+
+Le rail de navigation est un composant global de LABO. Toutes les fonctionnalités principales et les extensions LABX doivent pouvoir utiliser ce même rail et conserver une navigation cohérente.
+
+Le rail ne doit pas afficher une liste de toutes les fonctionnalités. Celles-ci restent accessibles depuis l’accueil.
+
+Le rail est réservé à la navigation globale et aux outils transversaux de LABO.
+
+3. Cohérence visuelle et navigation
+
+L’accueil et le rail de navigation doivent former une interface cohérente et unifiée.
+
+L’accueil constitue le point de départ de l’utilisateur et permet d’accéder aux fonctionnalités. Le rail permet de naviguer globalement dans LABO et de retrouver les outils transversaux, notamment l’action en cours, les paramètres et le terminal.
+
+Les transitions entre l’accueil et les fonctionnalités doivent être fluides et naturelles.
+
+L’interface doit privilégier la simplicité, la lisibilité et la rapidité d’accès aux outils. Le dynamisme de LABO doit principalement provenir de la qualité de ses animations et de ses transitions, plutôt que d’une accumulation d’effets graphiques.
+
+L’ensemble doit rester léger, épuré, responsive et optimisé pour les appareils Android.
+
+
+
+
+VI- L'espace de travail : le point le plus important
+
+Je recommande de séparer physiquement les données de LABO en deux espaces.
+L’espace de travail : donnée de l’application ou là où il n’y a pas de risque d’echec de unpack et repack. 
+L’espace de sortie dans sdcard/LABO
+Les espaces de travail doivent être structurés.
+Chaque projet doit avoir son propre base de données de projet (qui servira de référence et base de données de chaque action, fonctionnalités et moteur). Le répertoire de la base de données sera structuré dans l’espace de travail sous Database.
+
+
+
+
+I- LES FONCTIONNALITÉS ACTUELLES :
+1- FORGE 
+Même Interface que l’accueil et deux options : Unpack et repack 
+Unpack : il y a un champ qui permet d’ouvrir le gestionnaire intégré de LABO en popup pour naviguer et sélectionner le img. Puis le bouton LANCER Unpack. C’est pour déballer le img (Doit s’appuyer sur les moteurs existants pour un déballage efficace et doit enrichir la base de données du projet pour faciliter les futures manipulation ou repack). Un unpack = Un projet
+REPACK : Il y a un champ qui permet de sélectionner les projets disponible (les unpackés) et un bouton REPACK projet, pour le compiler. Doit sortir un résultat avec la même logique que le fichier de base et doit savoir comprendre et pouvoir lire la base de données du projet car va l’utiliser pour le repack). La sortie et le img final sera stocké dans sdcard/LABO/REPACKED
+
+
+2- GESTIONNAIRE DE FICHIERS 
+Ce sera un véritable gestionnaire de fichiers avec interface matérial 3. Suivant le design de l’accueil.  Il y aura une deux options, Projet et stockage. 
+Projet ouvre l’interface qui affiche la liste des projets (chaque unpack) et une fois un projet ouvert on sera dans le répertoire du projet concerné et on peut naviguer dans chaque projet pour voir leur contenu. Les fichiers modifiés ou créés seront marqués et en cas de fichiers supprimés on met une croix rouge à la place du fichier supprimé ( c’est pour la cartographie du projet)
+Stockage ouvre le répertoire du sdcard
+Quand c’est ouvert ou appelé à l’intérieur d’une fonctionnalité, il s’ouvre en popup. 
+Cette fonctionnalité s’appuie aussi sur les moteurs existants.
+
+3- SIGNALAB 
+Contient plusieurs options avec affichage en vertical de ces options.
+VerifyAPP : première option qui a pour fonction de vérifier la signature des applications, les détails de la signature et sa logique. Donc va enrichir la base de données et sortir un résultat dans Database/verifyapp
+Elle un champ qui ouvre le gestionnaire intégré en popup puis un bouton VERIFY. Une fois la vérification faite, on a des résultats très riches dans un tableau de bord (affiché comme des volets structurés selon les informations de la signature et la clé, donc très exhaustive)
+Keymaker : Permet de créer un set de clés ou une clé et signature. Il y a des champs pour insérer les identités de la signature mais aussi le bouton créer. Toujours dans keymaker il y a un bouton create from verify qui va créer une clé à partir des informations recueillies de l’application vérifier avec VerifyAPP. Pour ce cas un popup s’affiche avec le choix entre clonesign et custom. Clonesign permet recréer une signature avec la même logique, structure, identités, type de clés et mapping de la clé (donc une nouvelle clé mais quasi-identique). Custom permet de reprendre la logique de la clé de base mais avec de nouvelles identités à saisir.
+Pour ce cas un popup s’affiche avec le choix entre clonesign et custom. Clonesign permet recréer une signature avec la même logique, structure, identités, type de clés et mapping de la clé (donc une nouvelle clé mais quasi-identique). Custom permet de reprendre la logique de la clé de base mais avec de nouvelles identités à saisir.
+SIGNAPP : signe l’application. Il y a donc un champ pour choisir l’application à signer (ouverture du gestionnaire intégré) et un bouton SIGN. Le bouton sign affiche un popup avec le choix entre les clés créées dans keymaker et la création de nouvelles (qui affiche des champs pour saisir l’identité) Une fois le choix fait, la signature s’effectue.
+ROMsignchain : Le but est de sortir la logique de la signature de chaque fichier signé dans le unpacké mais aussi de sortir les hashes de chaque fichier. Pour les applications, il sort des informations ultra détaillé de chaque application. Il enrichit aussi la base de données du projet et met dedans tous les informations nécessaires à la compréhension de la logique de la vérification de signature, chaîne de confiance de l’img unpacké, il sort aussi le type de signature de chaque apk, le mapping mais aussi catégorise dans un ou plusieurs fichiers json le groupement des signatures détectés. Ce groupement sera donc très complet, intelligent et croisée ce qui implique plusieurs catégorisation pour une compréhension totale du mapping de l’img unpacké. L’objectif est de pouvoir répliquer et reproduire la logique de la rom de base. En plus de tout ça, il extrait aussi la logique des permissions, des contextes et chaque mapping et fichiers nécessaires à la liaison de la logique de la signature de chaque apk. Il y aura donc un champ qui ouvre le gestionnaire de fichiers intégré pour sélectionner le img à analyser, puis un bouton LANCER. Il va donc lancer le unpack puis l’analyse et enrichi Database. 
+ROM SIGNER : Il va tout faire. Le but est d’avoir une nouvelle setkey mais en reprenant la logique du fichier cible. Dans ROM signer il y a un champ qui ouvre le gestionnaire intégré pour sélectionner un fichier img. Il y a un autre champ qui liste les fichiers unpackés c’est à dire les projets. Du coup on a le choix, si on choisi parmi le projet la procédure commence directement avec l’analyse. Mais si on choisi un img dans le gestionnaire, la procédure commence avec UNPACK. Donc RomSigner va unpacker, puis analyser et appliquer la signature. Mais encore il va mettre à jour les fichiers de permission si besoin et va aussi mettre à jour les fichiers de signature et les mapping en respectant la logique et structure du fichier de base. Il va aussi régénérer les oat, vdex, odex…fsvmeta. Puis repacker le tout pour sortir un résultat dans sdcard/LABO/ROMSIGN
+il faut donc une cohérence totale entre chaque interroperabilite de chaque fonctionnalité. Il faut que les moteurs et fonctionnalités arrives à reproduire la logique et la cohérence de la cible. 
+L’arborescence et la structure finales restent donc celles du fichier cible mais en cas de modification ou d’ajout ou suppression de fichiers une solution s'ouvre pour que ça soit bootable. Si la modification permet de booter, le repack se fera donc avec la nouvelle modification sans solution complémentaire.
+On verra petit à petit les améliorations mais pour le moment, on fait en sorte que la signature arrive a reproduire la manière dont les clés et la signature de la cible a été mis en place (Donc reproduire le mécanisme complet et la forme mais avec de nouvelles clés.)
+
+4- Paramètres : 
+Il y aura les options 
+Thème : clair, sombre ou système
+Préférences d’affichage
+Accès et privilèges root (possibilité d’accéder à l’autorisation) possibilité d’activer l’autorisation de stockage
+Ajout des extensions (ouvre en popup le gestionnaire pour naviguer et sélectionner le labx)
+Documentation sur comment créer les labx
+Documentation sur le projet et changelog 
+
+5- TERMINAL — CONSOLE UNIVERSELLE DE LABO
+
+Le Terminal est une console technique ultra-puissante et complète, accessible depuis n’importe quelle fonctionnalité, moteur, projet ou extension LABX. Il conserve le contexte de son invocation et permet d’interagir avec l’ensemble de l’écosystème LABO.
+
+Il permet d’exécuter des commandes autorisées, contrôler les traitements, consulter les journaux, analyser les erreurs et accéder aux outils de diagnostic. Les opérations nécessitant le root passent par le service privilégié de LABO.
+
+Le Terminal peut être réduit, partiellement déplié ou totalement déplié, sans interrompre les opérations en cours.
+
+Il reste indépendant de la logique des moteurs : le CORE ENGINE coordonne, les composants exécutent et le Terminal permet de contrôler et suivre les opérations.
+
+
+Crées le tout prêt à être pushé vers GITHUB pour être compilé avec GITHUB action.
+En même temps, une fois pushé sur GITHUB structure bien le résumé et L'explication de l’outil. Puis met un lien qui ouvre la documentation (bible complet et une documentation complète, surtout pour la création de labx) contenant les informations sur comment créer les labx.
